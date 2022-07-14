@@ -6,3 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+num = "0.3.1"
+quizx = { git = "https://github.com/Quantomatic/quizx" }
+kahypar = { path = "../../../kahypar-rs" }
+indicatif = "0.16.2"
+array_tool = "1.0.3"
+rayon = "1.5.3"
+rand = "0.8.5"
