@@ -16,10 +16,13 @@ use crate::decompositions::Decomposition;
 use crate::simulator::simulator;
 use crate::utilities::*;
 
+// use zx_sim::simulator::*;
+// use zx_sim::utilities::*;
+// use zx_sim::decompositions::Decomposition;
 
 fn main() {
 
-    let qs = 23;
+    let qs = 17;
     let c = random_iqp(qs);
     let mut g: Graph = c.to_graph();
 

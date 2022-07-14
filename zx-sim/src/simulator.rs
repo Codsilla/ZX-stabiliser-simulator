@@ -24,7 +24,7 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
         return ScalarN::zero();
     }
 
-    if g.tcount() < 30 {
+    if g.tcount() < 35 {
         let mut d = Decomposer::new(&g);
         d.use_cats(true);
         d.with_full_simp();
@@ -69,7 +69,7 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
     }
 
 
-    let (best_decomp_index,best_alpha) = alphas.into_iter().enumerate().reduce(|(i,x),(j,y)|{
+    let (best_decomp_index,_best_alpha) = alphas.into_iter().enumerate().reduce(|(i,x),(j,y)|{
         if x <= y { (i,x) } else { (j,y) }
     }).unwrap();
 
