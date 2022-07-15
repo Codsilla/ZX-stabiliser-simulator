@@ -73,6 +73,9 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
         if x <= y { (i,x) } else { (j,y) }
     }).unwrap();
 
+    if best_decomp_index==8 {
+        println!("used Star6!!!!!")
+    }
 
     let best_decomp = decomp[best_decomp_index];
 

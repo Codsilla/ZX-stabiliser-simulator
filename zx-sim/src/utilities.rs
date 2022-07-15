@@ -5,7 +5,7 @@ use rand::Rng;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
 use std::hash::Hash;
-use quizx::hash_graph::GraphLike;
+use quizx::hash_graph::{GraphLike, VType};
 
 
 pub fn cat_distribution(g: &Graph) -> Vec<usize>{
@@ -77,6 +77,19 @@ pub fn most_frequent<T>(array: &[T], k: usize) -> (usize, &T) where T: Hash + Eq
     let result:Vec<(usize, &T)> = heap.into_sorted_vec().into_iter().map(|r| r.0).collect();
     result[k - 1]
 }
+
+
+pub fn make_star_n(n: usize)->Graph{
+    let mut g = Graph::new();
+    g.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+    
+    for i in 1..=n{
+        g.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+        g.add_edge_smart(0,i,quizx::hash_graph::EType::H);
+    }
+    g
+}
+
 
 
 pub fn hidden_shift_constructor(qs :usize, n_ccz : usize, seed: usize) ->Circuit {

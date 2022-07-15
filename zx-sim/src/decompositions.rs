@@ -139,16 +139,19 @@ impl Decomposition {
         ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp()]
     }
 
-    pub fn all_but_trivial()->Vec<Decomposition> {
-        vec![Decomposition::trivial_in_cat3_decomp(),Decomposition::cut_decomp() ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp()
-            ,Decomposition::cat4_decomp(),Decomposition::cat5_decomp(),Decomposition::cat6_decomp()]
-    }
 
     pub fn without_trivial_and_cuts()->Vec<Decomposition>{
         vec![Decomposition::trivial_in_cat3_decomp()
         ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
         ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp()]
     }
+
+    pub fn with_stars()->Vec<Decomposition>{
+        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),Decomposition::cut_decomp()
+        ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
+        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),Decomposition::star6_decomp(),Decomposition::star3_decomp()]
+    }
+
 }
 
 
@@ -603,4 +606,118 @@ impl Decomposition {
      }
  }
 
+
+
+ //Stars
+
+ fn find_star_k(g: &Graph,k : usize) -> Vec<usize>{
+
+    let t_of_deg_k:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4 && g.degree(v) == k).collect();
+
+    'outer: for v in t_of_deg_k{
+        for neigh in g.neighbors(v) {
+            if *g.phase(neigh).denom() != 4 { continue 'outer;}
+        }
+
+        let mut star = vec![v]; 
+        star.append(&mut g.neighbor_vec(v));
+        return star;
+    }
+
+    vec![]
+}
+
+
+//TODO: There is a better decomposition:
+fn star6_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+ //fuse out the center T , cut the wire and decompose the cat6
+    match i {
+        0..=2 => {
+            
+            let mut gn = g.clone();
+            let reso0 = gn.add_vertex(VType::Z);
+            let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+            gn.add_edge(reso0, fuseout);
+            gn.add_to_phase(verts[0], Rational::new(-1,4));
+            //normalization
+            *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
+            
+            //To apply the cat6
+            cat_normal_form(&mut gn,&verts);
+            
+            cat6_replace_index(&gn, verts,i)
+        },
+        3..=6 => {
+
+            let mut gn = g.clone();
+            let reso1 = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 1));
+            let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+            gn.add_edge(reso1, fuseout);
+            gn.add_to_phase(verts[0], Rational::new(1,4));
+
+            //normalization
+            *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
+
+            //To apply the cat6
+            cat_normal_form(&mut gn,&verts);
+            
+            cat6_replace_index(&gn, verts,&(i-3))
+        }
+        other => panic!("Tried to access the index {} of the star6 decomposition",other)
+    }
+
+}
+
+
+impl Decomposition {
+    pub fn star6_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_k(g, 6) }, nb_terms: 6, to_normal_form: trivial_normal_form, get_term: star6_replace_index, approx_alpha: |g,vert| 0.369, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA }
+     }
+ }
+
+ fn star3_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+    //fuse out the center T , cut the wire and decompose the cat6
+       match i {
+           0 => {
+               
+               let mut gn = g.clone();
+               let reso0 = gn.add_vertex(VType::Z);
+               let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+               gn.add_edge(reso0, fuseout);
+               gn.add_to_phase(verts[0], Rational::new(-1,4));
+               //normalization
+               *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
+               
+               //To apply the pi copy
+               cat_normal_form(&mut gn,&verts);
+               gn
+           },
+           1 => {
+   
+               let mut gn = g.clone();
+               let reso1 = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 1));
+               let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+               gn.add_edge(reso1, fuseout);
+               gn.add_to_phase(verts[0], Rational::new(1,4));
+   
+               //normalization
+               *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
+   
+               //To copy the pi
+               cat_normal_form(&mut gn,&verts);
+               
+               gn
+           }
+           other => panic!("Tried to access the index {} of the star3 decomposition",other)
+       }
+   
+   }
+
+impl Decomposition {
+    pub fn star3_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_k(g, 3) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star3_replace_index, approx_alpha: |g,vert| 0.333, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA }
+     }
+ }
 

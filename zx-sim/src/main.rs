@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-//#![allow(unused_imports)]
+#![allow(unused_imports)]
 #![allow(unused_variables)]
 #![allow(non_snake_case)]
 
@@ -9,7 +9,10 @@ mod kahypar_decomposition;
 mod utilities;
 mod simulator;
 
-use quizx::hash_graph::{BasisElem, GraphLike};
+use num::{Rational, Zero};
+use quizx::decompose::Decomposer;
+use quizx::hash_graph::{BasisElem, GraphLike, VType};
+use quizx::scalar::ScalarN;
 use quizx::vec_graph::Graph;
 use std::time::Instant;
 use crate::decompositions::Decomposition;
@@ -22,7 +25,7 @@ use crate::utilities::*;
 
 fn main() {
 
-    let qs = 17;
+    let qs = 20;
     let c = random_iqp(qs);
     let mut g: Graph = c.to_graph();
 
@@ -30,9 +33,12 @@ fn main() {
     g.plug_outputs(&vec![BasisElem::Z0; qs]);
     println!("T-count before simplification {}",g.tcount());
     quizx::simplify::full_simp(&mut g);
+
+
+
     println!("T-count after simplification {}",g.tcount());
     println!("_________________");
-    let mut decomp = Decomposition::all_decomp();
+    let mut decomp = Decomposition::with_stars();
 
     //why dosen't this work?:
     //let inst = decomp.iter().map(|&mut d| d.find_instance(&g)).collect::<Vec<Vec<usize>>>();
@@ -78,14 +84,14 @@ fn main() {
 
     
     println!("cut size : {}",inst[2].len());
-
+    
     let time = Instant::now();
     println!("got       {}",simulator(&g,Decomposition::all_decomp).to_float());
     println!("Simulator time all_decomp  : {:.2?}",time.elapsed());
 
-    // let time = Instant::now();
-    // println!("got       {}",simulator(&g,Decomposition::all_but_trivial).to_float());
-    // println!("Simulator time without trivial  : {:.2?}",time.elapsed());
+    let time = Instant::now();
+    println!("got       {}",simulator(&g,Decomposition::with_stars).to_float());
+    println!("Simulator time with_stars  : {:.2?}",time.elapsed());
 
 
     
