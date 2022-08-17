@@ -15,10 +15,13 @@ use std::cmp::{Eq, Ord, Reverse};
 use std::cmp;
 
 
+use crate::kahip_cut::*;
+
+
 use crate::kahypar_decomposition::kaHyPar_cut_finder;
 use crate::utilities::*;
 
-const THRESHOLD_COMPUTE_ALPHA: usize = 30;
+static THRESHOLD_COMPUTE_ALPHA: usize = 100;
 
 
 #[derive(Clone, Copy)]
@@ -71,7 +74,7 @@ impl Decomposition {
         let mut tcounts : Vec<isize> = Vec::new();
         
         let base_alpha = (self.approx_alpha)(&g,&verts);
-        //check max T in connected component for the last few terms (last because better heuristic for cuts)
+        //check max T in connected component for the last few terms
         for i in self.nb_terms-nb_term_check..self.nb_terms {
             
             let mut d = (self.get_term)(&g,&verts,&i);   
@@ -100,7 +103,7 @@ impl Decomposition {
 
                 //helps to compute faster
                 //let alpha_comp = (self.nb_terms as f64).log2() / ((g.tcount() as isize - t_component) as f64);
-                if alpha_from_after(&g,t_component,self.nb_terms) + 0.1 > base_alpha {
+                if alpha_from_after(&g,t_component,self.nb_terms) + 0.05 > base_alpha {
                     return base_alpha;
                 }
             }
@@ -128,15 +131,28 @@ impl Decomposition {
 
 
     pub fn all_decomp()->Vec<Decomposition>{
-        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),Decomposition::cut_decomp()
-        ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
-        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp()]
+        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),
+        Decomposition::cut_decomp(),Decomposition::cut_kahip_decomp() , //Decomposition::cut_unbalanced_kahip_decomp(),
+        Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp(),
+        Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
+        Decomposition::star2_decomp(),Decomposition::star6_decomp(),
+        Decomposition::multiple_star1_decomp(),
+        Decomposition::star_fusion_1_3_decomp(), Decomposition::star_fusion_1_5_decomp()]
     }
 
     pub fn without_cuts()->Vec<Decomposition>{
         vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp()
         ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
-        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp()]
+        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
+        Decomposition::star2_decomp()]
+    }
+
+    pub fn without_kahip_cuts()->Vec<Decomposition>{
+        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),Decomposition::cut_decomp(), 
+        Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp()
+        ,Decomposition::cat4_decomp(),Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
+        Decomposition::star2_decomp(),Decomposition::star6_decomp(),
+        Decomposition::multiple_star1_decomp()]
     }
 
 
@@ -149,7 +165,14 @@ impl Decomposition {
     pub fn with_stars()->Vec<Decomposition>{
         vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),Decomposition::cut_decomp()
         ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
-        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),Decomposition::star6_decomp(),Decomposition::star3_decomp()]
+        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),Decomposition::star6_decomp(),Decomposition::star2_decomp()]
+    }
+
+    pub fn with_best_t()->Vec<Decomposition>{
+        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),Decomposition::cut_decomp()
+        ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
+        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),Decomposition::star6_decomp(),Decomposition::star2_decomp(),
+        Decomposition::trivial_best_decomp()]
     }
 
 }
@@ -184,6 +207,33 @@ pub fn most_connected_t_incat3(g :&Graph) -> Vec<usize>{
     vec![*x]
 }
 
+
+pub fn find_best_trivial(g :&Graph ) -> Vec<usize> {
+
+    let g = g.clone();
+    let ts = g.vertices().filter(|&v| *g.phase(v).denom() == 4);
+
+    //let alphas = ts.map(|v|-> f64 {alpha_from_after(&g, approx_t_after_cut(&g,&vec![v]) as isize,2)} );
+    let mut alphas = vec![];
+
+    for v in ts{
+        println!("{}",v);
+        let t_after = approx_t_after_cut(&g,&vec![v]);
+        let alpha = alpha_from_after(&g, t_after as isize, 2);
+        alphas.push(alpha);
+        print!("alpha {}",alpha);
+    }
+
+
+    let (best_node,best_alpha) = alphas.into_iter().enumerate().reduce(|(i,x),(j,y)|{
+        if x <= y { (i,x) } else { (j,y) }
+    }).unwrap();
+
+    vec![best_node]
+
+}
+
+
 fn trivial_normal_form(g:&mut Graph,verts: &Vec<usize>){}
 
 fn replace_t0(g:  &Graph, verts: &[usize]) -> Graph {
@@ -216,7 +266,7 @@ fn trivial_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize)-> Graph{
 
 }
 
-//TODO: add quicker approx for trivial reaplace (count cat3-arity)
+
 
 impl Decomposition {
     pub fn trivial_decomp()->Decomposition{
@@ -224,6 +274,9 @@ impl Decomposition {
     }
     pub fn trivial_in_cat3_decomp()->Decomposition{
         Decomposition { finder: |g: &Graph| -> Vec<usize>{ most_connected_t_incat3(g) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:usize::MAX  }
+    }
+    pub fn trivial_best_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_best_trivial(g) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:usize::MAX  }
     }
 }
 
@@ -284,7 +337,7 @@ impl Decomposition {
 }
 
 
-//Cats
+//----------------- Single Cats ---------------------------
 
 fn find_cat_k(g: &Graph,k : usize) -> Vec<usize>{
 
@@ -404,7 +457,7 @@ fn cat4_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
 
 impl Decomposition {
    pub fn cat4_decomp()->Decomposition{
-        Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_cat_k(g, 4) }, nb_terms: 2, to_normal_form: cat_normal_form, get_term: cat4_replace_index,approx_alpha: |g,vert| 0.25, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA  }
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_cat_k(g, 4) }, nb_terms: 2, to_normal_form: cat_normal_form, get_term: cat4_replace_index,approx_alpha: |g,vert| 0.25, compute_alpha_until: 2*THRESHOLD_COMPUTE_ALPHA  }
     }
 }
 
@@ -532,9 +585,9 @@ impl Decomposition {
 }
 
 
-//Cuts
+//-----------------------Cuts------------------------------------------
 
-//              (g: &Graph,verts: &Vec<usize>, i: &usize)-> Graph{
+
 fn cut_index(g :& Graph,cuts :& Vec<usize>, index : &usize) -> Graph {
 
     let mut ng = g.clone();
@@ -555,8 +608,7 @@ fn cut_index(g :& Graph,cuts :& Vec<usize>, index : &usize) -> Graph {
         i += 1;
         
     }
-    //quizx::simplify::full_simp(&mut ng);
-    //println!("T count :{}",ng.tcount());
+
     ng
 }
 
@@ -595,22 +647,33 @@ fn approx_t_after_cut(g :& Graph,cuts :& Vec<usize>) -> usize{
     t_after as usize
 }
 
-fn approx_alpha_after_cut(g :& Graph,cuts :& Vec<usize>) -> f64 {
+pub fn approx_alpha_after_cut(g :& Graph,cuts :& Vec<usize>) -> f64 {
     alpha_from_after(&g,approx_t_after_cut(&g,&cuts) as isize, 1<< cuts.len())
 }
 
 
 impl Decomposition {
+    
+    //Hypergraph
     pub fn cut_decomp()->Decomposition{
          Decomposition { finder: |g: &Graph| -> Vec<usize>{ kaHyPar_cut_finder(g,0.3) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
      }
- }
 
 
+    //extracted edges to vertex cut
+    pub fn cut_kahip_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ kahip_cut_finder(g,0.3) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
+     }
 
- //Stars
+    pub fn cut_unbalanced_kahip_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ kahip_cut_finder(g,0.9) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
+    }
+ 
+}
 
- fn find_star_k(g: &Graph,k : usize) -> Vec<usize>{
+//------------------Single Star--------------------------
+
+fn find_star_k(g: &Graph,k : usize) -> Vec<usize>{
 
     let t_of_deg_k:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4 && g.degree(v) == k).collect();
 
@@ -627,8 +690,33 @@ impl Decomposition {
     vec![]
 }
 
+fn find_multiple_star_k(g: &Graph,k : usize, n : usize) -> Vec<usize>{
 
-//TODO: There is a better decomposition:
+    let t_of_deg_k:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4 && g.degree(v) == k).collect();
+
+    let mut stars = vec![];
+    let mut i = 0;
+
+    'outer: for v in t_of_deg_k{
+        for neigh in g.neighbors(v) {
+            if *g.phase(neigh).denom() != 4 { continue 'outer;}
+        }
+
+        stars.push(v); 
+        stars.append(&mut g.neighbor_vec(v));
+        i +=1 ;
+
+        if i==n {
+            return stars;
+        }
+
+    }
+
+    vec![]
+}
+
+
+
 fn star6_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
 
  //fuse out the center T , cut the wire and decompose the cat6
@@ -676,9 +764,9 @@ impl Decomposition {
      }
  }
 
- fn star3_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+ fn star2_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
 
-    //fuse out the center T , cut the wire and decompose the cat6
+    //fuse out the center T , cut the wire and decompose the cat2
        match i {
            0 => {
                
@@ -716,8 +804,121 @@ impl Decomposition {
    }
 
 impl Decomposition {
-    pub fn star3_decomp()->Decomposition{
-         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_k(g, 3) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star3_replace_index, approx_alpha: |g,vert| 0.333, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA }
+    pub fn star2_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_k(g, 2) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star2_replace_index, approx_alpha: |g,vert| 0.333, compute_alpha_until: 2*THRESHOLD_COMPUTE_ALPHA }
      }
  }
 
+
+//---------------multiple stars--------------------------------------
+
+// TODO: A better Decomposition has been found alpha = 0.2769
+
+//5 stars_1 partial into 3 terms alpha = 0.3179
+fn multiple_star1_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+    //add an "artificial" T & -T to make a cat 6
+    let mut verts = verts.clone();
+    let mut gn = g.clone();
+    *gn.scalar_mut() *= ScalarN::sqrt2_pow(4);
+
+    
+    let art_t = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+    let art_anti_t = gn.add_vertex_with_phase(VType::Z,Rational::new(-1, 4));
+    gn.add_edge(art_t, art_anti_t);
+    verts.push(art_t);
+    verts.push(art_anti_t);
+
+
+    let cat_center = gn.add_vertex(VType::Z);
+
+    let mut cat6 = vec![cat_center];
+
+    for j in (0..12).step_by(2) {
+        gn.add_edge_with_type(cat_center, verts[j], EType::H);
+        cat6.push(verts[j]);
+    }
+    
+    return cat6_replace_index(&gn, &cat6, i);
+}
+
+
+impl Decomposition {
+    pub fn multiple_star1_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_multiple_star_k(g, 1, 5) }, nb_terms: 6, to_normal_form: trivial_normal_form, get_term: multiple_star1_replace_index, approx_alpha: |g,vert| 0.3179, compute_alpha_until: 0 }
+     }
+ }
+
+
+
+
+//---------------Star fusion--------------------------
+
+//find two instances of stars of size k and n
+fn find_star_k_n(g: &Graph,k : usize, n : usize) -> Vec<usize>{
+
+    let mut stars = vec![];
+
+    let mut stark = find_star_k(g, k);
+    let mut starn = find_star_k(g, n);
+
+    if starn.len()==0 || stark.len()==0 { return vec![];}
+
+    stars.append(&mut stark);
+    stars.append(&mut starn);
+
+    stars
+}
+
+//find two center instances of stars of size k and n
+fn find_star_center_k_n(g: &Graph,k : usize, n : usize) -> Vec<usize>{
+
+    let stars = find_star_k_n(g,k,n);
+    if stars.len()==0 {return vec![]}
+    if stars.len() != k+n+2 {panic!("Stars of the wrong size found")}
+
+    return vec![stars[0],stars[k+1]];
+}
+
+//Partially fuse two stars into a cat (note that the cat will be remove in the next itteration)
+fn star_fusion_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+    match i {
+        0 => {
+            
+            let mut gn = g.clone();
+            gn.add_edge_smart(verts[0], verts[1], EType::N);
+            gn.add_to_phase(verts[0], Rational::new(-1,4));
+            gn.add_to_phase(verts[1], Rational::new(1,4));
+    
+            gn
+        },
+        1 => {
+            //where the fusion happen
+            let mut gn = g.clone();
+
+            *gn.scalar_mut() *= ScalarN::from_phase(Rational::new(1,4));
+            let center = gn.add_vertex_with_phase(VType::Z, Rational::one());
+
+            gn.add_edge_with_type(center, verts[0], EType::H);
+            gn.add_edge_with_type(center, verts[1], EType::H);
+
+            gn.add_to_phase(verts[0], Rational::new(-1,4));
+            gn.add_to_phase(verts[1], Rational::new(-1,4));
+
+            gn
+
+        }
+        other => panic!("Tried to access the index {} of the star fusion decomposition",other)
+    }
+
+}
+
+impl Decomposition {
+    pub fn star_fusion_1_3_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_center_k_n(g, 1, 3) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.3809, compute_alpha_until: 0 }
+    }
+    pub fn star_fusion_1_5_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_center_k_n(g, 1, 5) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.3648, compute_alpha_until: 0 }
+   }
+ }

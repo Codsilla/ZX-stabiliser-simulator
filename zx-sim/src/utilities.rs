@@ -1,7 +1,9 @@
 use num::{One, Rational};
 use quizx::circuit::Circuit;
+use quizx::scalar::{ScalarN, Sqrt2};
 use quizx::vec_graph::Graph;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand::prelude::StdRng;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
 use std::hash::Hash;
@@ -16,6 +18,28 @@ pub fn cat_distribution(g: &Graph) -> Vec<usize>{
 
     cats
 }
+
+
+pub fn star_distribution(g: &Graph) -> Vec<usize>{
+
+    let t_of_deg_k:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4).collect();
+
+    let mut stars_degree = vec![];
+
+    'outer: for v in t_of_deg_k{
+        for neigh in g.neighbors(v) {
+            if *g.phase(neigh).denom() != 4 { continue 'outer;}
+        }
+
+        stars_degree.push(g.neighbors(v).len()); 
+    }
+
+    stars_degree.sort();
+
+    stars_degree
+}
+
+
 
 //computes the value of alpha given the resulting t-count 
 pub fn alpha_from_after(g: &Graph, tcount_after: isize, nb_terms: usize) -> f64 {
@@ -95,8 +119,8 @@ pub fn make_star_n(n: usize)->Graph{
 pub fn hidden_shift_constructor(qs :usize, n_ccz : usize, seed: usize) ->Circuit {
 
 
-    let debug = true;
-    if debug { println!("qubits: {}, # ccz: {}, seed: {}", qs, n_ccz, seed); }
+
+    println!("qubits: {}, # ccz: {}, seed: {}", qs, n_ccz, seed);
 
     
     let (c,_shift) = Circuit::random_hidden_shift()
@@ -109,14 +133,14 @@ pub fn hidden_shift_constructor(qs :usize, n_ccz : usize, seed: usize) ->Circuit
 }
 
 
-pub fn random_iqp(nqubits: usize) -> Circuit {
+pub fn random_iqp(nqubits: usize,seed : u64) -> Circuit {
 
-
+    let mut rng =StdRng::seed_from_u64(seed);
     let mut c_acc = Circuit::new(nqubits);
     //fisrt layer of Hadamard + random T
     for i in 0..nqubits{
         c_acc.add_gate( "h", vec![i]);
-        let t_phase = rand::thread_rng().gen_range(0..8);
+        let t_phase = rng.gen_range(0..8);
         c_acc.add_gate_with_phase("rz", vec![i], Rational::new(t_phase,4));
     }
 
@@ -124,7 +148,7 @@ pub fn random_iqp(nqubits: usize) -> Circuit {
         for j in 0..nqubits{
             if j==i {continue} // the parser did not crash with cx [i,i]!!!!!
 
-            let n_sgate = rand::thread_rng().gen_range(0..3);
+            let n_sgate = rng.gen_range(0..3);
             
             for _ in 0..n_sgate {
                 //implementation of a CS gate
@@ -139,7 +163,44 @@ pub fn random_iqp(nqubits: usize) -> Circuit {
         c_acc.add_gate( "h", vec![i]);
     }
 
-
-
     c_acc
+}
+
+pub fn random_pauli_exp(qs :usize, depth : usize,seed: u64, min_weight: usize, max_weight: usize) ->Circuit  {
+    
+    println!("qubits: {}, depth: {}, min_weight: {}, max_weight: {}, seed: {}",qs, depth, min_weight, max_weight, seed);
+    
+    let c = Circuit::random_pauli_gadget()
+    .qubits(qs)
+    .depth(depth)
+    .seed(seed)
+    .min_weight(min_weight)
+    .max_weight(max_weight)
+    .build();
+    
+
+    c
+}
+
+
+//fuse out a t and cut its wire
+pub fn remove_t_cut_wire(g: & Graph,spider : usize, index: usize) -> Graph{
+    
+    if index > 2 {panic!("Look for the index {} of the remove_t_cut_wire",index)}
+
+    let mut gn = g.clone();
+
+    let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+    gn.add_to_phase(spider, Rational::new(-1,4));
+
+    let reso = gn.add_vertex_with_phase(VType::Z,Rational::new(index as isize, 1));
+    gn.add_edge(reso, fuseout);
+
+    gn.add_to_phase(spider, Rational::new(index as isize, 1));
+
+    //normalization
+    *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
+
+    
+    gn
 }

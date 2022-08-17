@@ -5,7 +5,7 @@ use quizx::decompose::Decomposer;
 use quizx::scalar::*;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use crate::decompositions::*;
-use crate::utilities::to_subcomponent;
+use crate::utilities::{to_subcomponent, star_distribution, cat_distribution};
 
 
 pub fn simulator(g: &Graph,decomp: fn() -> std::vec::Vec<Decomposition>) -> Scalar<Vec<isize>>{
@@ -24,7 +24,7 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
         return ScalarN::zero();
     }
 
-    if g.tcount() < 35 {
+    if g.tcount() < 20 {
         let mut d = Decomposer::new(&g);
         d.use_cats(true);
         d.with_full_simp();
@@ -63,7 +63,11 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
         }else{
             let mut ng = g.clone();
             (decomp[i].to_normal_form)(&mut ng, &verts);
-            alphas.push(decomp[i].alpha(&ng,&verts));
+            let new_alpha = decomp[i].alpha(&ng,&verts);
+            alphas.push(new_alpha);
+            if new_alpha < 0.1 {
+                break;
+            }
         }
 
     }
@@ -72,10 +76,9 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
     let (best_decomp_index,_best_alpha) = alphas.into_iter().enumerate().reduce(|(i,x),(j,y)|{
         if x <= y { (i,x) } else { (j,y) }
     }).unwrap();
-
-    if best_decomp_index==8 {
-        println!("used Star6!!!!!")
-    }
+    println!("with decomposition {} got alpha = {:.3?}",best_decomp_index,_best_alpha);
+    println!("cats {:?}",cat_distribution(&g));
+    println!("stars {:?}",star_distribution(&g));
 
     let best_decomp = decomp[best_decomp_index];
 

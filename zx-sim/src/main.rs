@@ -4,20 +4,28 @@
 #![allow(non_snake_case)]
 
 
-mod decompositions;
+
 mod kahypar_decomposition;
+mod kahip_cut;
 mod utilities;
 mod simulator;
+mod decompositions;
 
 use num::{Rational, Zero};
 use quizx::decompose::Decomposer;
 use quizx::hash_graph::{BasisElem, GraphLike, VType};
 use quizx::scalar::ScalarN;
 use quizx::vec_graph::Graph;
+use rand::SeedableRng;
+use rand::prelude::StdRng;
+use zx_sim::utilities::hidden_shift_constructor;
 use std::time::Instant;
-use crate::decompositions::Decomposition;
+use crate::decompositions::{Decomposition, approx_alpha_after_cut};
+use crate::kahip_cut::kahip_cut_finder;
+use crate::kahypar_decomposition::kaHyPar_cut_finder;
 use crate::simulator::simulator;
 use crate::utilities::*;
+use std::env;
 
 // use zx_sim::simulator::*;
 // use zx_sim::utilities::*;
@@ -25,8 +33,20 @@ use crate::utilities::*;
 
 fn main() {
 
-    let qs = 20;
-    let c = random_iqp(qs);
+    env::set_var("RUST_BACKTRACE", "1");
+    let qs = 18;
+    let seed = 3135158;
+
+    //let c = random_iqp(qs,seed);
+    //let c = hidden_shift_constructor(qs, qs, seed);
+    
+    
+    
+    let depth = 50; //nice behaviour at 130
+    let min_weight= 2 ;
+    let max_weight = 4;
+    let c = random_pauli_exp(qs, depth, seed, min_weight, max_weight);
+
     let mut g: Graph = c.to_graph();
 
     g.plug_inputs(&vec![BasisElem::Z0; qs]);
@@ -38,7 +58,7 @@ fn main() {
 
     println!("T-count after simplification {}",g.tcount());
     println!("_________________");
-    let mut decomp = Decomposition::with_stars();
+    let mut decomp = Decomposition::all_decomp();
 
     //why dosen't this work?:
     //let inst = decomp.iter().map(|&mut d| d.find_instance(&g)).collect::<Vec<Vec<usize>>>();
@@ -82,16 +102,49 @@ fn main() {
     // dbg!(lastcomp.component_vertices().len());
     // println!("T count after  last : {}",lastcomp.tcount());
 
-    
+    println!("--------------Kahypar cut------------------------");
     println!("cut size : {}",inst[2].len());
-    
-    let time = Instant::now();
-    println!("got       {}",simulator(&g,Decomposition::all_decomp).to_float());
-    println!("Simulator time all_decomp  : {:.2?}",time.elapsed());
+    //println!("The cut {:?}",inst[2]);
+    println!("alpha {:?}",approx_alpha_after_cut(&g,&inst[2]));
+
+    println!("--------------unbalanced Kahypar cut------------------------");
+    let cut = kaHyPar_cut_finder(&g,0.9);
+    println!("cut size : {}",cut.len());
+    //println!("The cut {:?}",inst[2]);
+    println!("alpha {:?}",approx_alpha_after_cut(&g,&cut));
+
+
+    println!("--------------Kahip cut------------------------");
+    let kahipcut = kahip_cut_finder(&g,0.1);
+    println!("cut size : {}",kahipcut.len());
+    //println!("The cut {:?}",kahipcut);
+    println!("alpha {:?}",approx_alpha_after_cut(&g,&kahipcut));
+
+    println!("--------------unbalanced cut------------------------");
+    let kahipcut = kahip_cut_finder(&g,0.9);
+    println!("cut size : {}",kahipcut.len());
+    //println!("The cut {:?}",kahipcut);
+    println!("alpha {:?}",approx_alpha_after_cut(&g,&kahipcut));
+
+
+    // let time = Instant::now();
+    // println!("got       {}",simulator(&g,Decomposition::with_stars).to_float());
+    // println!("Simulator time with_stars  : {:.2?}",time.elapsed());
+
+    // let time = Instant::now();
+    // println!("got       {}",simulator(&g,Decomposition::with_best_t).to_float());
+    // println!("Simulator time with_best_t  : {:.2?}",time.elapsed());
+
+
+    // let time = Instant::now();
+    // println!("got       {}",simulator(&g,Decomposition::all_decomp).to_float());
+    // println!("Simulator time all_decomp  : {:.2?}",time.elapsed());
+
 
     let time = Instant::now();
-    println!("got       {}",simulator(&g,Decomposition::with_stars).to_float());
-    println!("Simulator time with_stars  : {:.2?}",time.elapsed());
+    println!("got       {}",simulator(&g,Decomposition::without_kahip_cuts).to_float());
+    println!("Simulator time without_kahip_cuts  : {:.2?}",time.elapsed());
+
 
 
     

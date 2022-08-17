@@ -267,6 +267,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "kahip"
+version = "0.1.0"
+source = "git+https://github.com/tuomas56/kahip-rs.git#725b6d62d73daf685c7a9421e0b2929d96b8437d"
+
+[[package]]
 name = "kahypar"
 version = "0.1.0"
 
@@ -625,7 +630,7 @@ dependencies = [
 [[package]]
 name = "quizx"
 version = "0.1.0"
-source = "git+https://github.com/Quantomatic/quizx#8b1af32d57c7e8ad42e55a95826521f44d733ca2"
+source = "git+https://github.com/tuomas56/quizx.git#57d033f0321e28e06e54300b39c191cd3acda820"
 dependencies = [
  "approx",
  "itertools",
@@ -952,6 +957,7 @@ version = "0.1.0"
 dependencies = [
  "array_tool",
  "indicatif",
+ "kahip",
  "kahypar",
  "num 0.3.1",
  "quizx",
