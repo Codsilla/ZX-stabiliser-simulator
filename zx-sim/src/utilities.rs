@@ -8,6 +8,7 @@ use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
 use std::hash::Hash;
 use quizx::hash_graph::{GraphLike, VType};
+use std::collections::HashSet;
 
 
 pub fn cat_distribution(g: &Graph) -> Vec<usize>{
@@ -22,11 +23,11 @@ pub fn cat_distribution(g: &Graph) -> Vec<usize>{
 
 pub fn star_distribution(g: &Graph) -> Vec<usize>{
 
-    let t_of_deg_k:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4).collect();
+    let potential_stars:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4).collect();
 
     let mut stars_degree = vec![];
 
-    'outer: for v in t_of_deg_k{
+    'outer: for v in potential_stars {
         for neigh in g.neighbors(v) {
             if *g.phase(neigh).denom() != 4 { continue 'outer;}
         }
@@ -38,6 +39,53 @@ pub fn star_distribution(g: &Graph) -> Vec<usize>{
 
     stars_degree
 }
+
+pub fn find_stars_center(g: &Graph) -> Vec<usize>{
+
+    let potential_stars:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4).collect();
+
+    let mut stars = vec![];
+
+    'outer: for v in potential_stars {
+        for neigh in g.neighbors(v) {
+            if *g.phase(neigh).denom() != 4 { continue 'outer;}
+        }
+
+        stars.push(v); 
+    }
+
+    stars
+
+}
+
+
+pub fn star_differ_distribution(g: &Graph) -> Vec<usize>{
+
+    let stars = find_stars_center(g);
+    let mut count = vec![0; 10];
+
+    for i in 0..stars.len() {
+
+        let ni:HashSet<usize> = HashSet::from_iter(g.neighbors(stars[i]));
+
+        for j in i+1..stars.len() {
+
+            if ni.contains(&stars[j]) { continue  }
+
+            let nj:HashSet<usize> = HashSet::from_iter(g.neighbors(stars[j]));
+            
+            let symdif = ni.symmetric_difference(&nj).count();
+
+            if symdif < 10 {
+                count[symdif] += 1;
+            }
+
+        }
+    }
+
+    count
+}
+
 
 
 
@@ -103,9 +151,11 @@ pub fn most_frequent<T>(array: &[T], k: usize) -> (usize, &T) where T: Hash + Eq
 }
 
 
-pub fn make_star_n(n: usize)->Graph{
+pub fn make_star_n(n: usize, add_pi_center: bool)->Graph{
     let mut g = Graph::new();
     g.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+
+    if add_pi_center {g.add_to_phase(0, Rational::new(1, 1))}
     
     for i in 1..=n{
         g.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
@@ -113,6 +163,20 @@ pub fn make_star_n(n: usize)->Graph{
     }
     g
 }
+
+pub fn make_cat_n(n: usize, add_pi_center: bool)->Graph{
+    let mut g = Graph::new();
+    g.add_vertex_with_phase(VType::Z,Rational::new(0, 1));
+
+    if add_pi_center {g.add_to_phase(0, Rational::new(1, 1))}
+    
+    for i in 1..=n{
+        g.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+        g.add_edge_smart(0,i,quizx::hash_graph::EType::H);
+    }
+    g
+}
+
 
 
 
@@ -182,25 +246,63 @@ pub fn random_pauli_exp(qs :usize, depth : usize,seed: u64, min_weight: usize, m
     c
 }
 
-
-//fuse out a t and cut its wire
+//There is a bug here apparently (this function is not used anywhere else)
+//fuse out a t and cut its wire (for catification) 
 pub fn remove_t_cut_wire(g: & Graph,spider : usize, index: usize) -> Graph{
     
-    if index > 2 {panic!("Look for the index {} of the remove_t_cut_wire",index)}
+    if index > 1 {panic!("Look for the index {} of the remove_t_cut_wire",index)}
 
     let mut gn = g.clone();
-
-    let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
-    gn.add_to_phase(spider, Rational::new(-1,4));
-
     let reso = gn.add_vertex_with_phase(VType::Z,Rational::new(index as isize, 1));
+    let fuseout = gn.add_vertex_with_phase(VType::Z,gn.phase(spider));
     gn.add_edge(reso, fuseout);
-
-    gn.add_to_phase(spider, Rational::new(index as isize, 1));
+    gn.set_phase(spider, Rational::new(index as isize,1));
 
     //normalization
     *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
-
-    
     gn
+}
+
+
+
+//fuse out a cat into two by adding T gates in the centere (for cat splits)
+pub fn cat_spliter(g: & Graph, center : usize, k : usize, n : usize) -> (Graph,Vec<usize>,Vec<usize>){
+    
+    if g.degree(center) != k+n-2 {panic!("Tried to split a cat {} into a cat {} and a cat {}",g.degree(center),k,n)}
+
+
+    let mut gn = g.clone();
+
+    let catn_center = gn.add_vertex(VType::Z);
+
+    let mut catk = vec![center];
+    let mut catn = vec![catn_center];
+
+    let neigh = gn.neighbor_vec(center);
+
+    //unfuse
+    for i in 0..(n-1) {
+        
+        gn.add_edge_with_type(neigh[i], catn_center, quizx::hash_graph::EType::H);
+        gn.remove_edge(neigh[i], center);
+
+    }
+
+    //add new Ts
+    let newt = gn.add_vertex_with_phase(VType::Z,Rational::new(1,4));
+    let new_anti_t = gn.add_vertex_with_phase(VType::Z,Rational::new(-1,4));
+    gn.add_to_phase(new_anti_t, gn.phase(center));
+    gn.set_phase(center, Rational::new(0,1));
+
+    gn.add_edge_with_type(newt,new_anti_t,quizx::hash_graph::EType::N);
+
+    gn.add_edge_with_type(newt,catn[0],quizx::hash_graph::EType::H);
+    gn.add_edge_with_type(new_anti_t,catk[0],quizx::hash_graph::EType::H);
+
+    catn.append(&mut gn.neighbor_vec(catn[0]));
+    catk.append(&mut gn.neighbor_vec(catk[0]));
+
+
+
+    (gn,catk,catn)
 }

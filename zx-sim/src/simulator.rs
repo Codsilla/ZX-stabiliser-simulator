@@ -1,11 +1,14 @@
 
+#![allow(unused_imports)]
+
+
 use quizx::hash_graph::GraphLike;
 use quizx::vec_graph::Graph;
 use quizx::decompose::Decomposer;
 use quizx::scalar::*;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use crate::decompositions::*;
-use crate::utilities::{to_subcomponent, star_distribution, cat_distribution};
+use crate::utilities::{to_subcomponent, star_distribution, cat_distribution, star_differ_distribution};
 
 
 pub fn simulator(g: &Graph,decomp: fn() -> std::vec::Vec<Decomposition>) -> Scalar<Vec<isize>>{
@@ -16,7 +19,9 @@ pub fn simulator(g: &Graph,decomp: fn() -> std::vec::Vec<Decomposition>) -> Scal
 
 
 fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposition>,nb_terms:usize)-> Scalar<Vec<isize>> {
+
     quizx::simplify::full_simp(&mut g);
+    //println!("T count : {}", g.tcount());
 
     //println!("nb term {}",nb_terms);
 
@@ -24,7 +29,8 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
         return ScalarN::zero();
     }
 
-    if g.tcount() < 20 {
+    
+    if g.tcount() < 25   {
         let mut d = Decomposer::new(&g);
         d.use_cats(true);
         d.with_full_simp();
@@ -76,17 +82,24 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
     let (best_decomp_index,_best_alpha) = alphas.into_iter().enumerate().reduce(|(i,x),(j,y)|{
         if x <= y { (i,x) } else { (j,y) }
     }).unwrap();
-    println!("with decomposition {} got alpha = {:.3?}",best_decomp_index,_best_alpha);
-    println!("cats {:?}",cat_distribution(&g));
-    println!("stars {:?}",star_distribution(&g));
+    
+    //println!("with decomposition {} got alpha = {:.3?}",best_decomp_index,_best_alpha);
+    //println!("cats {:?}",cat_distribution(&g));
+    //println!("stars {:?}",star_distribution(&g));
+    //println!("star_differ_distribution {:?}",star_differ_distribution(&g));
 
     let best_decomp = decomp[best_decomp_index];
-
+    //println!("using instance : {:?}", inst[best_decomp_index]);
 
 
 
     (best_decomp.to_normal_form)(&mut g,&inst[best_decomp_index]);
+   
 
+    // (0..best_decomp.nb_terms)
+    // .into_iter()
+    
+    
     (0..best_decomp.nb_terms)
     .into_par_iter()
     .map(|i| {
@@ -111,7 +124,9 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
 
         //result = result + local_result;
         local_result
-    })
-    .reduce(|| ScalarN::zero(), |a, b| a + b)
+    }).reduce(|| ScalarN::zero(), |a, b| a + b)
+    
+    //.reduce(|a, b| a + b).unwrap()
+    
 }
 

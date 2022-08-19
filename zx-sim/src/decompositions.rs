@@ -13,6 +13,7 @@ use quizx::scalar::*;
 use quizx::vec_graph::{self, Graph};
 use std::cmp::{Eq, Ord, Reverse};
 use std::cmp;
+use std::collections::HashSet;
 
 
 use crate::kahip_cut::*;
@@ -141,10 +142,15 @@ impl Decomposition {
     }
 
     pub fn without_cuts()->Vec<Decomposition>{
-        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp()
-        ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
-        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
-        Decomposition::star2_decomp()]
+        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),//Decomposition::cut_decomp(), 
+        Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp()
+        ,Decomposition::cat4_decomp(),Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
+        Decomposition::cat7_decomp(),Decomposition::cat8_decomp(),Decomposition::cat9_decomp(),
+        Decomposition::cat10_decomp(),
+        Decomposition::star2_decomp(),Decomposition::star6_decomp(),Decomposition::star10_decomp(),
+        Decomposition::symmetric_diff_2_decomp(),Decomposition::symmetric_diff_4_decomp(),Decomposition::symmetric_diff_6_decomp(),
+        Decomposition::symmetric_diff_8_decomp(),Decomposition::symmetric_diff_10_decomp(),
+        Decomposition::multiple_star1_decomp()]
     }
 
     pub fn without_kahip_cuts()->Vec<Decomposition>{
@@ -152,6 +158,9 @@ impl Decomposition {
         Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp()
         ,Decomposition::cat4_decomp(),Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
         Decomposition::star2_decomp(),Decomposition::star6_decomp(),
+        //Decomposition::star_fusion_3_3_decomp(),
+        //Decomposition::star_fusion_1_3_decomp(), Decomposition::star_fusion_1_5_decomp(),
+        Decomposition::symmetric_diff_2_decomp(),Decomposition::symmetric_diff_4_decomp(),Decomposition::symmetric_diff_6_decomp(),
         Decomposition::multiple_star1_decomp()]
     }
 
@@ -173,6 +182,12 @@ impl Decomposition {
         ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
         ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),Decomposition::star6_decomp(),Decomposition::star2_decomp(),
         Decomposition::trivial_best_decomp()]
+    }
+
+
+    pub fn test_plz()->Vec<Decomposition>{
+        vec![Decomposition::cat7_decomp(),Decomposition::cat8_decomp(),Decomposition::cat9_decomp(),
+        Decomposition::cat10_decomp(),Decomposition::star2_decomp(),Decomposition::star6_decomp(),Decomposition::star10_decomp()]
     }
 
 }
@@ -584,6 +599,92 @@ impl Decomposition {
     }
 }
 
+fn cat7_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+    if i > &5 {panic!("Tried to access the index {} of the replace_cat7 decomposition",i)}
+
+
+    let (g,cat3,cat6) = cat_spliter(&g,verts[0],3,6);
+
+    let g = cat3_replace_index(&g, &cat3, &(i/3));
+
+    let g = cat6_replace_index(&g, &cat6, &(i%3));
+
+    g
+}
+
+impl Decomposition {
+    pub fn cat7_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_cat_k(g, 7) }, nb_terms: 6, to_normal_form: cat_normal_form, get_term: cat7_replace_index, approx_alpha: |g,vert| 0.3693, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA }
+     }
+}
+
+
+
+fn cat8_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+    if i > &5 {panic!("Tried to access the index {} of the replace_cat8 decomposition",i)}
+
+
+    let (g,cat4,cat6) = cat_spliter(&g,verts[0],4,6);
+
+    let g = cat4_replace_index(&g, &cat4, &(i/3));
+
+    let g = cat6_replace_index(&g, &cat6, &(i%3));
+
+    g
+}
+
+impl Decomposition {
+    pub fn cat8_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_cat_k(g, 8) }, nb_terms: 6, to_normal_form: cat_normal_form, get_term: cat8_replace_index, approx_alpha: |g,vert| 0.3231, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA }
+     }
+}
+
+
+fn cat9_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+    if i > &8 {panic!("Tried to access the index {} of the replace_cat8 decomposition",i)}
+
+
+    let (g,cat5,cat6) = cat_spliter(&g,verts[0],5,6);
+
+    let g = cat5_replace_index(&g, &cat5, &(i/3));
+
+    let g = cat6_replace_index(&g, &cat6, &(i%3));
+
+    g
+}
+
+impl Decomposition {
+    pub fn cat9_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_cat_k(g, 9) }, nb_terms: 9, to_normal_form: cat_normal_form, get_term: cat9_replace_index, approx_alpha: |g,vert| 0.3522, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA }
+     }
+}
+
+
+
+fn cat10_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+    if i > &9 {panic!("Tried to access the index {} of the replace_cat10 decomposition",i)}
+
+
+    let (g,cat6,cat6_2) = cat_spliter(&g,verts[0],6,6);
+
+    let g = cat6_replace_index(&g, &cat6, &(i/3));
+
+    let g = cat6_replace_index(&g, &cat6_2, &(i%3));
+
+    g
+}
+
+impl Decomposition {
+    pub fn cat10_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_cat_k(g, 10) }, nb_terms: 9, to_normal_form: cat_normal_form, get_term: cat10_replace_index, approx_alpha: |g,vert| 0.3170, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA }
+     }
+}
+
+
 
 //-----------------------Cuts------------------------------------------
 
@@ -673,7 +774,7 @@ impl Decomposition {
 
 //------------------Single Star--------------------------
 
-fn find_star_k(g: &Graph,k : usize) -> Vec<usize>{
+pub fn find_star_k(g: &Graph,k : usize) -> Vec<usize>{
 
     let t_of_deg_k:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4 && g.degree(v) == k).collect();
 
@@ -689,6 +790,10 @@ fn find_star_k(g: &Graph,k : usize) -> Vec<usize>{
 
     vec![]
 }
+
+
+
+
 
 fn find_multiple_star_k(g: &Graph,k : usize, n : usize) -> Vec<usize>{
 
@@ -725,24 +830,21 @@ fn star6_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
             
             let mut gn = g.clone();
             let reso0 = gn.add_vertex(VType::Z);
-            let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+            let fuseout = gn.add_vertex_with_phase(VType::Z,gn.phase(verts[0]));
             gn.add_edge(reso0, fuseout);
-            gn.add_to_phase(verts[0], Rational::new(-1,4));
+            gn.set_phase(verts[0], Rational::new(0,1));
+
             //normalization
             *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
-            
-            //To apply the cat6
-            cat_normal_form(&mut gn,&verts);
-            
             cat6_replace_index(&gn, verts,i)
         },
         3..=6 => {
 
             let mut gn = g.clone();
             let reso1 = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 1));
-            let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+            let fuseout = gn.add_vertex_with_phase(VType::Z,gn.phase(verts[0]));
             gn.add_edge(reso1, fuseout);
-            gn.add_to_phase(verts[0], Rational::new(1,4));
+            gn.set_phase(verts[0], Rational::new(1,1));
 
             //normalization
             *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
@@ -761,10 +863,13 @@ fn star6_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
 impl Decomposition {
     pub fn star6_decomp()->Decomposition{
          Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_k(g, 6) }, nb_terms: 6, to_normal_form: trivial_normal_form, get_term: star6_replace_index, approx_alpha: |g,vert| 0.369, compute_alpha_until: THRESHOLD_COMPUTE_ALPHA }
-     }
- }
+    }
+}
 
- fn star2_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+
+
+fn star2_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
 
     //fuse out the center T , cut the wire and decompose the cat2
        match i {
@@ -772,33 +877,34 @@ impl Decomposition {
                
                let mut gn = g.clone();
                let reso0 = gn.add_vertex(VType::Z);
-               let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+               let fuseout = gn.add_vertex_with_phase(VType::Z,gn.phase(verts[0]));
                gn.add_edge(reso0, fuseout);
-               gn.add_to_phase(verts[0], Rational::new(-1,4));
+               gn.set_phase(verts[0], Rational::new(0,1));
+
                //normalization
                *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
                
                //To apply the pi copy
-               cat_normal_form(&mut gn,&verts);
+               //cat_normal_form(&mut gn,&verts);
                gn
            },
            1 => {
    
                let mut gn = g.clone();
                let reso1 = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 1));
-               let fuseout = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 4));
+               let fuseout = gn.add_vertex_with_phase(VType::Z,gn.phase(verts[0]));
                gn.add_edge(reso1, fuseout);
-               gn.add_to_phase(verts[0], Rational::new(1,4));
+               gn.set_phase(verts[0], Rational::new(1,1));
    
                //normalization
                *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
    
                //To copy the pi
-               cat_normal_form(&mut gn,&verts);
+               //cat_normal_form(&mut gn,&verts);
                
                gn
            }
-           other => panic!("Tried to access the index {} of the star3 decomposition",other)
+           other => panic!("Tried to access the index {} of the star2 decomposition",other)
        }
    
    }
@@ -807,7 +913,69 @@ impl Decomposition {
     pub fn star2_decomp()->Decomposition{
          Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_k(g, 2) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star2_replace_index, approx_alpha: |g,vert| 0.333, compute_alpha_until: 2*THRESHOLD_COMPUTE_ALPHA }
      }
- }
+}
+
+
+
+fn star10_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+    //fuse out the center T , cut the wire and decompose the cat6
+       match i {
+           0..=8 => {
+               
+               let mut gn = g.clone();
+               let reso0 = gn.add_vertex(VType::Z);
+               let fuseout = gn.add_vertex_with_phase(VType::Z,gn.phase(verts[0]));
+               gn.add_edge(reso0, fuseout);
+               gn.set_phase(verts[0], Rational::new(0,1));
+   
+               //normalization
+               *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
+               cat10_replace_index(&gn, verts,i)
+           },
+           9..=18 => {
+   
+               let mut gn = g.clone();
+               let reso1 = gn.add_vertex_with_phase(VType::Z,Rational::new(1, 1));
+               let fuseout = gn.add_vertex_with_phase(VType::Z,gn.phase(verts[0]));
+               gn.add_edge(reso1, fuseout);
+               gn.set_phase(verts[0], Rational::new(1,1));
+   
+               //normalization
+               *gn.scalar_mut() *= ScalarN::sqrt2_pow(-2);
+   
+               //To apply the cat6
+               cat_normal_form(&mut gn,&verts);
+               
+               cat10_replace_index(&gn, verts,&(i-9))
+           }
+           other => panic!("Tried to access the index {} of the star10 decomposition",other)
+       }
+   
+   }
+
+
+
+// fn star10_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
+
+//     if i>= &18 {panic!("Tried to access the index {} of the star10_replace_index decomposition",i)}
+//     println!("{}    {}",i/9,&(i%9));
+//     let g = g.clone();
+//     let g = remove_t_cut_wire(&g,verts[0], i/9); 
+
+//     dbg!(find_cat_k(&g,10));
+//     let g = cat10_replace_index(&g, verts, &(i%9));
+
+
+//     g
+
+// }
+
+impl Decomposition {
+    pub fn star10_decomp()->Decomposition{
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_k(g, 10) }, nb_terms: 18, to_normal_form: trivial_normal_form, get_term: star10_replace_index, approx_alpha: |g,vert| 0.37902, compute_alpha_until: 2*THRESHOLD_COMPUTE_ALPHA }
+     }
+}
 
 
 //---------------multiple stars--------------------------------------
@@ -885,15 +1053,6 @@ fn star_fusion_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
 
     match i {
         0 => {
-            
-            let mut gn = g.clone();
-            gn.add_edge_smart(verts[0], verts[1], EType::N);
-            gn.add_to_phase(verts[0], Rational::new(-1,4));
-            gn.add_to_phase(verts[1], Rational::new(1,4));
-    
-            gn
-        },
-        1 => {
             //where the fusion happen
             let mut gn = g.clone();
 
@@ -908,6 +1067,15 @@ fn star_fusion_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
 
             gn
 
+        },
+        1 => {
+            let mut gn = g.clone();
+            gn.add_edge_smart(verts[0], verts[1], EType::N);
+            gn.add_to_phase(verts[0], Rational::new(-1,4));
+            gn.add_to_phase(verts[1], Rational::new(1,4));
+    
+            gn
+
         }
         other => panic!("Tried to access the index {} of the star fusion decomposition",other)
     }
@@ -915,6 +1083,18 @@ fn star_fusion_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Graph{
 }
 
 impl Decomposition {
+    //symmetric star fusion
+    pub fn star_fusion_3_3_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_center_k_n(g, 3, 3) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.364765, compute_alpha_until: 0 }
+    }
+        //TODO:need cat8 to be implemented before being used
+   pub fn star_fusion_4_4_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_center_k_n(g, 4, 4) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.385679, compute_alpha_until: 0 }
+    }
+
+
+
+    //asymmetric star fusion
     pub fn star_fusion_1_3_decomp()->Decomposition{
          Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_center_k_n(g, 1, 3) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.3809, compute_alpha_until: 0 }
     }
@@ -922,3 +1102,61 @@ impl Decomposition {
         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_star_center_k_n(g, 1, 5) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.3648, compute_alpha_until: 0 }
    }
  }
+
+ //symmetric-diff stars
+
+ //return the center of the two biggest stars (by total arity) where the symmetric diff of the T is k 
+ pub fn biggest_stars_differ_by_k(g: &Graph, k : usize) -> Vec<usize>{
+
+    let stars = find_stars_center(g);
+
+    let mut bests = vec![];
+    let mut size = 0;
+
+    for i in 0..stars.len() {
+
+        let ni:HashSet<usize> = HashSet::from_iter(g.neighbors(stars[i]));
+
+        for j in i+1..stars.len() {
+
+            if ni.contains(&stars[j]) { continue  }
+
+            let nj:HashSet<usize> = HashSet::from_iter(g.neighbors(stars[j]));
+            
+            let symdif = ni.symmetric_difference(&nj).count();
+
+            if symdif == k {
+                let total_arity = g.neighbors(stars[i]).count() + g.neighbors(stars[i]).count();
+                if total_arity > size {
+                    bests = vec![stars[i], stars[j]];
+                    size = total_arity;
+                }
+                
+            }
+
+        }
+    }
+
+    bests
+}
+
+
+impl Decomposition {
+    //symmetric diff star fusion
+    pub fn symmetric_diff_2_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ biggest_stars_differ_by_k(g, 2) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.347120, compute_alpha_until: 0 }
+    }
+    pub fn symmetric_diff_4_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ biggest_stars_differ_by_k(g, 4) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.3809, compute_alpha_until: 0 }
+    }
+    pub fn symmetric_diff_6_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ biggest_stars_differ_by_k(g, 6) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.36476, compute_alpha_until: 0 }
+    }
+    pub fn symmetric_diff_8_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ biggest_stars_differ_by_k(g, 8) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.3856, compute_alpha_until: 0 }
+    }
+    pub fn symmetric_diff_10_decomp()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ biggest_stars_differ_by_k(g, 8) }, nb_terms: 2, to_normal_form: trivial_normal_form, get_term: star_fusion_index, approx_alpha: |g,vert| 0.37316, compute_alpha_until: 0 }
+    }
+
+}
