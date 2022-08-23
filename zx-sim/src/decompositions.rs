@@ -16,7 +16,7 @@ use std::cmp;
 use std::collections::HashSet;
 
 
-use crate::kahip_cut::*;
+//use crate::kahip_cut::*;
 
 
 use crate::kahypar_decomposition::kaHyPar_cut_finder;
@@ -133,12 +133,15 @@ impl Decomposition {
 
     pub fn all_decomp()->Vec<Decomposition>{
         vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),
-        Decomposition::cut_decomp(),Decomposition::cut_kahip_decomp() , //Decomposition::cut_unbalanced_kahip_decomp(),
-        Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp(),
-        Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
-        Decomposition::star2_decomp(),Decomposition::star6_decomp(),
-        Decomposition::multiple_star1_decomp(),
-        Decomposition::star_fusion_1_3_decomp(), Decomposition::star_fusion_1_5_decomp()]
+        Decomposition::cut_decomp(),Decomposition::cut_hypergraph_unbalanced(),//Decomposition::cut_unbalanced_kahip_decomp(),
+        Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp()
+        ,Decomposition::cat4_decomp(),Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
+        Decomposition::cat7_decomp(),Decomposition::cat8_decomp(),Decomposition::cat9_decomp(),
+        Decomposition::cat10_decomp(),
+        Decomposition::star2_decomp(),Decomposition::star6_decomp(),Decomposition::star10_decomp(),
+        Decomposition::symmetric_diff_2_decomp(),Decomposition::symmetric_diff_4_decomp(),Decomposition::symmetric_diff_6_decomp(),
+        Decomposition::symmetric_diff_8_decomp(),Decomposition::symmetric_diff_10_decomp(),
+        Decomposition::multiple_star1_decomp()]
     }
 
     pub fn without_cuts()->Vec<Decomposition>{
@@ -177,11 +180,9 @@ impl Decomposition {
         ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),Decomposition::star6_decomp(),Decomposition::star2_decomp()]
     }
 
-    pub fn with_best_t()->Vec<Decomposition>{
-        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),Decomposition::cut_decomp()
-        ,Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
-        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),Decomposition::star6_decomp(),Decomposition::star2_decomp(),
-        Decomposition::trivial_best_decomp()]
+    pub fn basic()->Vec<Decomposition>{
+        vec![Decomposition::trivial_decomp(),Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),Decomposition::cat4_decomp()
+        ,Decomposition::cat5_decomp(),Decomposition::cat6_decomp()]
     }
 
 
@@ -757,18 +758,23 @@ impl Decomposition {
     
     //Hypergraph
     pub fn cut_decomp()->Decomposition{
-         Decomposition { finder: |g: &Graph| -> Vec<usize>{ kaHyPar_cut_finder(g,0.3) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ kaHyPar_cut_finder(g,0.3) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
+     }
+
+    //Hypergraph
+    pub fn cut_hypergraph_unbalanced()->Decomposition{
+        Decomposition { finder: |g: &Graph| -> Vec<usize>{ kaHyPar_cut_finder(g,0.9) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
      }
 
 
-    //extracted edges to vertex cut
-    pub fn cut_kahip_decomp()->Decomposition{
-         Decomposition { finder: |g: &Graph| -> Vec<usize>{ kahip_cut_finder(g,0.3) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
-     }
+    ////extracted edges to vertex cut
+    // pub fn cut_kahip_decomp()->Decomposition{
+    //      Decomposition { finder: |g: &Graph| -> Vec<usize>{ kahip_cut_finder(g,0.3) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
+    //  }
 
-    pub fn cut_unbalanced_kahip_decomp()->Decomposition{
-        Decomposition { finder: |g: &Graph| -> Vec<usize>{ kahip_cut_finder(g,0.9) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
-    }
+    // pub fn cut_unbalanced_kahip_decomp()->Decomposition{
+    //     Decomposition { finder: |g: &Graph| -> Vec<usize>{ kahip_cut_finder(g,0.9) }, nb_terms: 0, to_normal_form: trivial_normal_form, get_term: cut_index, approx_alpha: approx_alpha_after_cut, compute_alpha_until:THRESHOLD_COMPUTE_ALPHA }
+    // }
  
 }
 
@@ -794,7 +800,7 @@ pub fn find_star_k(g: &Graph,k : usize) -> Vec<usize>{
 
 
 
-
+//warning those stars can touch
 fn find_multiple_star_k(g: &Graph,k : usize, n : usize) -> Vec<usize>{
 
     let t_of_deg_k:Vec<usize> = g.vertices().filter(|&v| *g.phase(v).denom() == 4 && g.degree(v) == k).collect();
@@ -1013,7 +1019,7 @@ fn multiple_star1_replace_index(g: &Graph,verts: &Vec<usize>, i: &usize) -> Grap
 
 impl Decomposition {
     pub fn multiple_star1_decomp()->Decomposition{
-         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_multiple_star_k(g, 1, 5) }, nb_terms: 6, to_normal_form: trivial_normal_form, get_term: multiple_star1_replace_index, approx_alpha: |g,vert| 0.3179, compute_alpha_until: 0 }
+         Decomposition { finder: |g: &Graph| -> Vec<usize>{ find_multiple_star_k(g, 1, 5) }, nb_terms: 3, to_normal_form: trivial_normal_form, get_term: multiple_star1_replace_index, approx_alpha: |g,vert| 0.2999, compute_alpha_until: 0 }
      }
  }
 
@@ -1022,7 +1028,7 @@ impl Decomposition {
 
 //---------------Star fusion--------------------------
 
-//find two instances of stars of size k and n
+//find two instances of stars of size k and n // warning those stars can touch
 fn find_star_k_n(g: &Graph,k : usize, n : usize) -> Vec<usize>{
 
     let mut stars = vec![];
@@ -1038,7 +1044,7 @@ fn find_star_k_n(g: &Graph,k : usize, n : usize) -> Vec<usize>{
     stars
 }
 
-//find two center instances of stars of size k and n
+//find two center instances of stars of size k and n //warning those stars can touch
 fn find_star_center_k_n(g: &Graph,k : usize, n : usize) -> Vec<usize>{
 
     let stars = find_star_k_n(g,k,n);
@@ -1119,7 +1125,7 @@ impl Decomposition {
 
         for j in i+1..stars.len() {
 
-            if ni.contains(&stars[j]) { continue  }
+           // if ni.contains(&stars[j]) { continue  }
 
             let nj:HashSet<usize> = HashSet::from_iter(g.neighbors(stars[j]));
             

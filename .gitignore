@@ -1,3 +1,7 @@
 #notebook stuff
 .ipynb_checkpoints/
 
+#circuit list
+circuits/
+zx-sim/target/
+

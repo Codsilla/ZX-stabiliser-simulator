@@ -7,12 +7,14 @@
 
 
 mod kahypar_decomposition;
-mod kahip_cut;
+//mod kahip_cut;
 mod utilities;
 mod simulator;
 mod decompositions;
+mod weak_simulator;
 
 use num::{Rational, Zero};
+use quizx::circuit;
 use quizx::decompose::Decomposer;
 use quizx::hash_graph::{BasisElem, GraphLike, VType};
 use quizx::scalar::ScalarN;
@@ -22,10 +24,11 @@ use rand::prelude::StdRng;
 use zx_sim::utilities::hidden_shift_constructor;
 use std::time::Instant;
 use crate::decompositions::{Decomposition, approx_alpha_after_cut,find_star_k};
-use crate::kahip_cut::kahip_cut_finder;
+//use crate::kahip_cut::kahip_cut_finder;
 use crate::kahypar_decomposition::kaHyPar_cut_finder;
 use crate::simulator::simulator;
 use crate::utilities::*;
+use crate::weak_simulator::{qubit_by_qubit_weak_sim, gate_by_gate_weak_sim};
 use std::env;
 
 // use zx_sim::simulator::*;
@@ -47,21 +50,38 @@ fn main() {
     let depth = 60; //nice behaviour at 130 
     let min_weight= 2 ;
     let max_weight = 4;
-    let c = random_pauli_exp(qs, depth, seed, min_weight, max_weight);
-
-    let mut g: Graph = c.to_graph();
-
-    g.plug_inputs(&vec![BasisElem::Z0; qs]);
-    g.plug_outputs(&vec![BasisElem::Z0; qs]);
     
+    for depth in (1..60).step_by(3){
+
     
-    println!("T-count before simplification {}",g.tcount());
-    quizx::simplify::full_simp(&mut g);
+        let c = random_pauli_exp(qs, depth, seed, min_weight, max_weight);
 
+        let mut g: Graph = c.clone().to_graph();
 
+        g.plug_inputs(&vec![BasisElem::Z0; qs]);
+        g.plug_outputs(&vec![BasisElem::Z0; qs]);
+        
 
-    println!("T-count after simplification {}",g.tcount());
-    println!("_________________");
+        
+        println!("T-count before simplification {}",g.tcount());
+        quizx::simplify::full_simp(&mut g);
+        println!("T-count after simplification {}",g.tcount());
+        println!("_________________");
+
+        let time = Instant::now();
+        println!("got       {}",simulator(&g,Decomposition::without_cuts).to_float());
+        println!("Simulator time without_cuts  : {:.2?}",time.elapsed());
+
+        let time = Instant::now();
+        let mut d = Decomposer::new(&g);
+        d.use_cats(true);
+        d.with_full_simp();
+        d.decomp_all();
+        println!("should be {}", d.scalar.to_float());
+        println!("Quizx Simulator time  : {:.2?}",time.elapsed());
+
+    }
+
     //let mut decomp = Decomposition::all_decomp();
 
 
@@ -79,7 +99,7 @@ fn main() {
     // }
     // dbg!(alphas);
 
-    // let mut decomp = Decomposition::cut_decomp();
+    //let mut decomp = Decomposition::without_cuts();
     // let inst = decomp.find_instance(&g);
 
     // dbg!(g.component_vertices().len());
@@ -129,18 +149,39 @@ fn main() {
     // println!("alpha {:?}",approx_alpha_after_cut(&g,&kahipcut));
 
 
-    let time = Instant::now();
-    println!("got       {}",simulator(&g,Decomposition::without_cuts).to_float());
-    println!("Simulator time without_cuts  : {:.2?}",time.elapsed());
+    // let time = Instant::now();
+    // println!("got       {}",simulator(&g,Decomposition::without_cuts).to_float());
+    // println!("Simulator time without_cuts  : {:.2?}",time.elapsed());
+
+    // let time = Instant::now();
+    // let mut d = Decomposer::new(&g);
+    // d.use_cats(true);
+    // d.with_full_simp();
+    // d.decomp_all();
+    // println!("should be {}", d.scalar.to_float());
+    // println!("Quizx Simulator time  : {:.2?}",time.elapsed());
+
 
     // let time = Instant::now();
     // println!("got       {}",simulator(&g,Decomposition::with_best_t).to_float());
     // println!("Simulator time with_best_t  : {:.2?}",time.elapsed());
 
+    // println!("Strong sim");
 
     // let time = Instant::now();
-    // println!("got       {}",simulator(&g,Decomposition::all_decomp).to_float());
+    // println!("got       {}",simulator(&g,Decomposition::without_cuts).to_float());
     // println!("Simulator time all_decomp  : {:.2?}",time.elapsed());
+
+    // println!("Weak sim");
+
+    // let time = Instant::now();
+    // println!(" {:?}" ,gate_by_gate_weak_sim(&c, Decomposition::without_cuts));
+    // println!("took  : {:.2?}",time.elapsed());
+
+
+    // let time = Instant::now();
+    // println!(" {:?}" ,qubit_by_qubit_weak_sim(&c, Decomposition::all_decomp));
+    // println!("took  : {:.2?}",time.elapsed());
 
 
 

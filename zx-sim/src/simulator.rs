@@ -30,7 +30,7 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
     }
 
     
-    if g.tcount() < 25   {
+    if g.tcount() < 20   {
         let mut d = Decomposer::new(&g);
         d.use_cats(true);
         d.with_full_simp();
@@ -129,4 +129,5 @@ fn simulator_internal(mut g: Graph, decomp_gen: fn() -> std::vec::Vec<Decomposit
     //.reduce(|a, b| a + b).unwrap()
     
 }
+
 

@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 num = "0.3.1"
 quizx = { git = "https://github.com/tuomas56/quizx.git" }
-kahip = { git = "https://github.com/tuomas56/kahip-rs.git" }
+# kahip = { git = "https://github.com/tuomas56/kahip-rs.git" }
 kahypar = { path = "../../../kahypar-rs" }
 indicatif = "0.16.2"
 array_tool = "1.0.3"
