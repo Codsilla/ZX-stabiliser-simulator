@@ -212,7 +212,7 @@ pub fn random_iqp(nqubits: usize,seed : u64) -> Circuit {
         for j in 0..nqubits{
             if j==i {continue} // the parser did not crash with cx [i,i]!!!!!
 
-            let n_sgate = rng.gen_range(0..3);
+            let n_sgate = rng.gen_range(0..4);
             
             for _ in 0..n_sgate {
                 //implementation of a CS gate
@@ -245,6 +245,23 @@ pub fn random_pauli_exp(qs :usize, depth : usize,seed: u64, min_weight: usize, m
 
     c
 }
+
+//buggy sometimes give the error 'Parallel edges only supported between Z and X vertices'
+//example fix_t_expectation_random_circuit(40,400,30,1355); after simplification
+pub fn fix_t_expectation_random_circuit(qs:usize,depth : usize, nb_t : usize, seed:u64)->Circuit {
+
+
+    let c = Circuit::random().seed(seed)
+                .qubits(qs)
+                .depth(depth)
+                .p_t((nb_t as f32)/(depth as f32))
+                .with_cliffords()
+                .build();
+
+    c
+}
+
+
 
 //There is a bug here apparently (this function is not used anywhere else)
 //fuse out a t and cut its wire (for catification) 
