@@ -13,6 +13,8 @@ pub fn kaHyPar_cut_01(g :&Graph)-> Vec<usize> {
 
 pub fn kaHyPar_cut_finder(g :&Graph,epsilon : f64) -> Vec<usize> {
 
+   
+
     if g.tcount()==0 {
         return vec![];
     }
@@ -32,12 +34,21 @@ pub fn kaHyPar_cut_finder(g :&Graph,epsilon : f64) -> Vec<usize> {
         hyperedges[vmapping[d]].push(i as u32);
     }
 
+    //Remove degree 1 hyperedges
+    let mut filter_hyperedges = vec![];
 
-    let mut gh = kahypar::Hypergraph::from_edges(2,edge_list.len(),&hyperedges).build();
+    for he in hyperedges {
+        if he.len() > 1 {
+            filter_hyperedges.push(he);
+        }
+    }
+
+    let mut gh = kahypar::Hypergraph::from_edges(2,edge_list.len(),&filter_hyperedges).build();
+
 
     let mut context = kahypar::Context::from_config("src/config.ini");
     let (_,part) = gh.partition(&mut context, epsilon);
-
+    
 
     //build a list of all index reduced adjacent part for each vertex (with repetition)
     let mut adjacent_part = vec![Vec::<u32>::new();nb_spider];
