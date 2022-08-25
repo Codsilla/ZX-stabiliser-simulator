@@ -132,8 +132,8 @@ impl Decomposition {
 
 
     pub fn all_decomp()->Vec<Decomposition>{
-        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),
-        Decomposition::cut_decomp(),Decomposition::cut_hypergraph_unbalanced(),//Decomposition::cut_unbalanced_kahip_decomp(),
+        vec![Decomposition::trivial_in_cat3_decomp(),Decomposition::trivial_decomp(),
+        Decomposition::cut_decomp(),//Decomposition::cut_hypergraph_unbalanced(),//Decomposition::cut_unbalanced_kahip_decomp(),
         Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp()
         ,Decomposition::cat4_decomp(),Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
         Decomposition::cat7_decomp(),Decomposition::cat8_decomp(),Decomposition::cat9_decomp(),
@@ -155,6 +155,32 @@ impl Decomposition {
         Decomposition::symmetric_diff_8_decomp(),Decomposition::symmetric_diff_10_decomp(),
         Decomposition::multiple_star1_decomp()]
     }
+    pub fn without_unbalanced_cuts()->Vec<Decomposition>{
+        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),//Decomposition::cut_decomp(),
+        Decomposition::cut_decomp(), 
+        Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),
+        Decomposition::cat4_decomp(),Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
+        Decomposition::cat7_decomp(),Decomposition::cat8_decomp(),Decomposition::cat9_decomp(),
+        Decomposition::cat10_decomp(),
+        Decomposition::star2_decomp(),Decomposition::star6_decomp(),Decomposition::star10_decomp(),
+        Decomposition::symmetric_diff_2_decomp(),Decomposition::symmetric_diff_4_decomp(),Decomposition::symmetric_diff_6_decomp(),
+        Decomposition::symmetric_diff_8_decomp(),Decomposition::symmetric_diff_10_decomp(),
+        Decomposition::multiple_star1_decomp()]
+    }
+
+    pub fn without_balanced_cuts()->Vec<Decomposition>{
+        vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),//Decomposition::cut_decomp(),
+        Decomposition::cut_hypergraph_unbalanced(), 
+        Decomposition::magic5_2_decomp(),Decomposition::cat3_decomp(),
+        Decomposition::cat4_decomp(),Decomposition::cat5_decomp(),Decomposition::cat6_decomp(),
+        Decomposition::cat7_decomp(),Decomposition::cat8_decomp(),Decomposition::cat9_decomp(),
+        Decomposition::cat10_decomp(),
+        Decomposition::star2_decomp(),Decomposition::star6_decomp(),Decomposition::star10_decomp(),
+        Decomposition::symmetric_diff_2_decomp(),Decomposition::symmetric_diff_4_decomp(),Decomposition::symmetric_diff_6_decomp(),
+        Decomposition::symmetric_diff_8_decomp(),Decomposition::symmetric_diff_10_decomp(),
+        Decomposition::multiple_star1_decomp()]
+    }
+
 
     pub fn without_kahip_cuts()->Vec<Decomposition>{
         vec![Decomposition::trivial_decomp(),Decomposition::trivial_in_cat3_decomp(),Decomposition::cut_decomp(), 
