@@ -209,26 +209,56 @@ pub fn random_iqp(nqubits: usize,seed : u64) -> Circuit {
     }
 
     for i in 0..nqubits{
-        for j in 0..nqubits{
+        for j in i+1..nqubits{
             if j==i {continue} // the parser did not crash with cx [i,i]!!!!!
 
-            let n_sgate = rng.gen_range(0..4);
+            let n_sgate = rng.gen_range(0..=3);
+
             
-            for _ in 0..n_sgate {
-                //implementation of a CS gate
-                c_acc.add_gate_with_phase("rz", vec![i], Rational::new(1,4));
-                c_acc.add_gate_with_phase("rz", vec![j], Rational::new(1,4));
-                c_acc.add_gate("cx", vec![i,j]);
-                c_acc.add_gate_with_phase("rz", vec![j], Rational::new(7,4));
-                c_acc.add_gate("cx", vec![i,j]);
-            }
+            if n_sgate == 0 {continue;}
+        //implementation of a power of a CS gate
+           c_acc.add_gate_with_phase("rz", vec![i], Rational::new(n_sgate,4));
+           c_acc.add_gate_with_phase("rz", vec![j], Rational::new(n_sgate,4));
+           c_acc.add_gate("cx", vec![i,j]);
+           c_acc.add_gate_with_phase("rz", vec![j], Rational::new(-n_sgate,4));
+           c_acc.add_gate("cx", vec![i,j]);
+        
         }
         //final layer of Hadamard
         c_acc.add_gate( "h", vec![i]);
     }
 
+
+    //for i in 0..nqubits{
+    //    c_acc.add_gate( "h", vec![i]);
+    //}
+
+
     c_acc
 }
+
+// let n_sgate = rng.gen_range(0..4);
+// if n_sgate == 0 {continue;}
+// // for _ in 0..n_sgate {
+//     //implementation of a CS gate
+//     c_acc.add_gate_with_phase("rz", vec![i], Rational::new(n_sgate,4));
+//     c_acc.add_gate_with_phase("rz", vec![j], Rational::new(n_sgate,4));
+//     c_acc.add_gate("cx", vec![i,j]);
+//     c_acc.add_gate_with_phase("rz", vec![j], Rational::new(-n_sgate,4));
+//     c_acc.add_gate("cx", vec![i,j]);
+// //}
+
+
+// if n_sgate == 0 {continue;}
+// for _ in 0..=n_sgate {
+//     //implementation of a CS gate
+//     c_acc.add_gate_with_phase("rz", vec![i], Rational::new(1,4));
+//     c_acc.add_gate_with_phase("rz", vec![j], Rational::new(1,4));
+//     c_acc.add_gate("cx", vec![i,j]);
+//     c_acc.add_gate_with_phase("rz", vec![j], Rational::new(-1,4));
+//     c_acc.add_gate("cx", vec![i,j]);
+// }
+
 
 pub fn random_pauli_exp(qs :usize, depth : usize,seed: u64, min_weight: usize, max_weight: usize) ->Circuit  {
     
